@@ -1,11 +1,23 @@
-const User = require("../models/userModel");
+import { PrismaClient, User } from "@prisma/client";
+import { Request, Response } from "express";
 
-// Controller functions for user routes
+const prisma = new PrismaClient();
+
+interface ReqBody {
+	name?: string;
+	username?: string;
+	password?: string;
+	role?: string;
+}
+
 const userController = {
-	// GET all users
-	getAllUsers: async (req, res) => {
+	getAllUsers: async (req: Request, res: Response) => {
 		try {
-			const users = await User.find();
+			const users: User[] = await prisma.user.findMany({
+				where: {
+					deletedAt: null,
+				},
+			});
 			res.status(200).json({
 				success: true,
 				data: users,
@@ -19,12 +31,10 @@ const userController = {
 		}
 	},
 
-	// CREATE a new user
-	createUser: async (req, res) => {
+	createUser: async (req: Request<{}, {}, ReqBody>, res: Response) => {
 		try {
 			const { name, username, password, role } = req.body;
 
-			// Validate request body
 			if (!name || !username || !password || !role) {
 				return res.status(400).json({
 					success: false,
@@ -32,8 +42,9 @@ const userController = {
 				});
 			}
 
-			// Check if user already exists
-			const existingUser = await User.findOne({ username });
+			const existingUser: User | null = await prisma.user.findUnique({
+				where: { username },
+			});
 			if (existingUser) {
 				return res.status(409).json({
 					success: false,
@@ -41,8 +52,7 @@ const userController = {
 				});
 			}
 
-			const newUser = await User.create(req.body);
-			newUser.password = undefined;
+			const newUser: User = await prisma.user.create({ data: req.body });
 			res.status(201).json({
 				success: true,
 				data: newUser,
@@ -56,10 +66,11 @@ const userController = {
 		}
 	},
 
-	// GET a single user by ID
-	getUserById: async (req, res) => {
+	getUserById: async (req: Request, res: Response) => {
 		try {
-			const user = await User.findById(req.params.id);
+			const user: User | null = await prisma.user.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
 			if (!user) {
 				return res.status(404).json({
 					success: false,
@@ -79,38 +90,11 @@ const userController = {
 		}
 	},
 
-	// // UPDATE an existing user
-	// updateUser: async (req, res) => {
-	// 	try {
-	// 		const updatedUser = await User.findByIdAndUpdate(
-	// 			req.params.id,
-	// 			req.body,
-	// 			{ new: true }
-	// 		);
-	// 		if (!updatedUser) {
-	// 			return res.status(404).json({
-	// 				success: false,
-	// 				message: "User not found",
-	// 			});
-	// 		}
-	// 		res.status(200).json({
-	// 			success: true,
-	// 			data: updatedUser,
-	// 			message: "User updated successfully",
-	// 		});
-	// 	} catch (error) {
-	// 		res.status(500).json({
-	// 			success: false,
-	// 			message: error.message,
-	// 		});
-	// 	}
-	// },
-
-	// With password modification
-	// UPDATE an existing user
-	updateUser: async (req, res) => {
+	updateUser: async (req: Request<{}, {}, ReqBody>, res: Response) => {
 		try {
-			const user = await User.findById(req.params.id).select("+password");
+			const user: User | null = await prisma.user.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
 			if (!user) {
 				return res.status(404).json({
 					success: false,
@@ -118,11 +102,10 @@ const userController = {
 				});
 			}
 
-			// Update the fields
-			Object.assign(user, req.body);
-
-			const updatedUser = await user.save();
-			updatedUser.password = undefined;
+			const updatedUser: User = await prisma.user.update({
+				where: { id: parseInt(req.params.id) },
+				data: req.body,
+			});
 			res.status(200).json({
 				success: true,
 				data: updatedUser,
@@ -136,43 +119,22 @@ const userController = {
 		}
 	},
 
-	// // DELETE a user
-	// deleteUser: async (req, res) => {
-	// 	try {
-	// 		const deletedUser = await User.findByIdAndDelete(req.params.id);
-	// 		if (!deletedUser) {
-	// 			return res.status(404).json({
-	// 				success: false,
-	// 				message: "User not found",
-	// 			});
-	// 		}
-	// 		res.status(200).json({
-	// 			success: true,
-	// 			message: "User deleted successfully",
-	// 		});
-	// 	} catch (error) {
-	// 		res.status(500).json({
-	// 			success: false,
-	// 			message: error.message,
-	// 		});
-	// 	}
-	// },
-
-	// Soft DELETE a user
-	deleteUserSoft: async (req, res) => {
+	deleteUserSoft: async (req: Request, res: Response) => {
 		try {
-			const deletedUser = await User.findOne({
-				_id: req.params.id,
-				deletedAt: null,
+			const user: User | null = await prisma.user.findUnique({
+				where: { id: parseInt(req.params.id) },
 			});
-			if (!deletedUser) {
+			if (!user) {
 				return res.status(404).json({
 					success: false,
 					message: "User not found",
 				});
 			}
-			deletedUser.deletedAt = new Date();
-			await deletedUser.save();
+
+			const deletedUser: User = await prisma.user.update({
+				where: { id: parseInt(req.params.id) },
+				data: { deletedAt: new Date() },
+			});
 			res.status(200).json({
 				success: true,
 				message: "User soft deleted successfully",
@@ -185,19 +147,21 @@ const userController = {
 		}
 	},
 
-	// Hard DELETE a user
-	deleteUserHard: async (req, res) => {
+	deleteUserHard: async (req: Request, res: Response) => {
 		try {
-			const deletedUser = await User.findByIdAndDelete(
-				{ _id: req.params.id },
-				{ includeSoftDeleted: true }
-			);
-			if (!deletedUser) {
+			const user: User | null = await prisma.user.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
+			if (!user) {
 				return res.status(404).json({
 					success: false,
 					message: "User not found",
 				});
 			}
+
+			const deletedUser: User = await prisma.user.delete({
+				where: { id: parseInt(req.params.id) },
+			});
 			res.status(200).json({
 				success: true,
 				message: "User hard deleted successfully",
@@ -211,4 +175,4 @@ const userController = {
 	},
 };
 
-module.exports = userController;
+export default userController;

@@ -1,11 +1,14 @@
-const Medicine = require("../models/medicineModel");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-// Controller functions for medicine routes
 const medicineController = {
-	// GET all medicines
 	getAllMedicines: async (req, res) => {
 		try {
-			const medicines = await Medicine.find();
+			const medicines = await prisma.medicine.findMany({
+				where: {
+					deletedAt: null,
+				},
+			});
 			res.status(200).json({
 				success: true,
 				data: medicines,
@@ -19,10 +22,11 @@ const medicineController = {
 		}
 	},
 
-	// CREATE a new medicine
 	createMedicine: async (req, res) => {
 		try {
-			const newMedicine = await Medicine.create(req.body);
+			const newMedicine = await prisma.medicine.create({
+				data: req.body,
+			});
 			res.status(201).json({
 				success: true,
 				data: newMedicine,
@@ -36,10 +40,11 @@ const medicineController = {
 		}
 	},
 
-	// GET a single medicine by ID
 	getMedicineById: async (req, res) => {
 		try {
-			const medicine = await Medicine.findById(req.params.id);
+			const medicine = await prisma.medicine.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
 			if (!medicine) {
 				return res.status(404).json({
 					success: false,
@@ -59,20 +64,22 @@ const medicineController = {
 		}
 	},
 
-	// UPDATE an existing medicine
 	updateMedicine: async (req, res) => {
 		try {
-			const updatedMedicine = await Medicine.findByIdAndUpdate(
-				req.params.id,
-				req.body,
-				{ new: true }
-			);
-			if (!updatedMedicine) {
+			const medicine = await prisma.medicine.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
+			if (!medicine) {
 				return res.status(404).json({
 					success: false,
 					message: "Medicine not found",
 				});
 			}
+
+			const updatedMedicine = await prisma.medicine.update({
+				where: { id: parseInt(req.params.id) },
+				data: req.body,
+			});
 			res.status(200).json({
 				success: true,
 				data: updatedMedicine,
@@ -86,43 +93,22 @@ const medicineController = {
 		}
 	},
 
-	// // DELETE a medicine
-	// deleteMedicine: async (req, res) => {
-	// 	try {
-	// 		const deletedMedicine = await Medicine.findByIdAndDelete(req.params.id);
-	// 		if (!deletedMedicine) {
-	// 			return res.status(404).json({
-	// 				success: false,
-	// 				message: "Medicine not found",
-	// 			});
-	// 		}
-	// 		res.status(200).json({
-	// 			success: true,
-	// 			message: "Medicine deleted successfully",
-	// 		});
-	// 	} catch (error) {
-	// 		res.status(500).json({
-	// 			success: false,
-	// 			message: error.message,
-	// 		});
-	// 	}
-	// },
-
-	// Soft DELETE a medicine
 	deleteMedicineSoft: async (req, res) => {
 		try {
-			const deletedMedicine = await Medicine.findOne({
-				_id: req.params.id,
-				deletedAt: null,
+			const medicine = await prisma.medicine.findUnique({
+				where: { id: parseInt(req.params.id) },
 			});
-			if (!deletedMedicine) {
+			if (!medicine) {
 				return res.status(404).json({
 					success: false,
 					message: "Medicine not found",
 				});
 			}
-			deletedMedicine.deletedAt = new Date();
-			await deletedMedicine.save();
+
+			const deletedMedicine = await prisma.medicine.update({
+				where: { id: parseInt(req.params.id) },
+				data: { deletedAt: new Date() },
+			});
 			res.status(200).json({
 				success: true,
 				message: "Medicine soft deleted successfully",
@@ -135,19 +121,21 @@ const medicineController = {
 		}
 	},
 
-	// Hard DELETE a medicine
 	deleteMedicineHard: async (req, res) => {
 		try {
-			const deletedMedicine = await Medicine.findByIdAndDelete(
-				{ _id: req.params.id },
-				{ includeSoftDeleted: true }
-			);
-			if (!deletedMedicine) {
+			const medicine = await prisma.medicine.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
+			if (!medicine) {
 				return res.status(404).json({
 					success: false,
 					message: "Medicine not found",
 				});
 			}
+
+			const deletedMedicine = await prisma.medicine.delete({
+				where: { id: parseInt(req.params.id) },
+			});
 			res.status(200).json({
 				success: true,
 				message: "Medicine hard deleted successfully",

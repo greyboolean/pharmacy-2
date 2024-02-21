@@ -1,11 +1,14 @@
-const Customer = require("../models/customerModel");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-// Controller functions for customer routes
 const customerController = {
-	// GET all customers
 	getAllCustomers: async (req, res) => {
 		try {
-			const customers = await Customer.find();
+			const customers = await prisma.customer.findMany({
+				where: {
+					deletedAt: null,
+				},
+			});
 			res.status(200).json({
 				success: true,
 				data: customers,
@@ -19,10 +22,11 @@ const customerController = {
 		}
 	},
 
-	// CREATE a new customer
 	createCustomer: async (req, res) => {
 		try {
-			const newCustomer = await Customer.create(req.body);
+			const newCustomer = await prisma.customer.create({
+				data: req.body,
+			});
 			res.status(201).json({
 				success: true,
 				data: newCustomer,
@@ -36,10 +40,11 @@ const customerController = {
 		}
 	},
 
-	// GET a single customer by ID
 	getCustomerById: async (req, res) => {
 		try {
-			const customer = await Customer.findById(req.params.id);
+			const customer = await prisma.customer.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
 			if (!customer) {
 				return res.status(404).json({
 					success: false,
@@ -59,20 +64,22 @@ const customerController = {
 		}
 	},
 
-	// UPDATE an existing customer
 	updateCustomer: async (req, res) => {
 		try {
-			const updatedCustomer = await Customer.findByIdAndUpdate(
-				req.params.id,
-				req.body,
-				{ new: true }
-			);
-			if (!updatedCustomer) {
+			const customer = await prisma.customer.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
+			if (!customer) {
 				return res.status(404).json({
 					success: false,
 					message: "Customer not found",
 				});
 			}
+
+			const updatedCustomer = await prisma.customer.update({
+				where: { id: parseInt(req.params.id) },
+				data: req.body,
+			});
 			res.status(200).json({
 				success: true,
 				data: updatedCustomer,
@@ -86,45 +93,22 @@ const customerController = {
 		}
 	},
 
-	// // DELETE a customer
-	// deleteCustomer: async (req, res) => {
-	// 	try {
-	// 		const deletedCustomer = await Customer.findByIdAndDelete(
-	// 			req.params.id
-	// 		);
-	// 		if (!deletedCustomer) {
-	// 			return res.status(404).json({
-	// 				success: false,
-	// 				message: "Customer not found",
-	// 			});
-	// 		}
-	// 		res.status(200).json({
-	// 			success: true,
-	// 			message: "Customer deleted successfully",
-	// 		});
-	// 	} catch (error) {
-	// 		res.status(500).json({
-	// 			success: false,
-	// 			message: error.message,
-	// 		});
-	// 	}
-	// },
-
-	// Soft DELETE a customer
 	deleteCustomerSoft: async (req, res) => {
 		try {
-			const deletedCustomer = await Customer.findOne({
-				_id: req.params.id,
-				deletedAt: null,
+			const customer = await prisma.customer.findUnique({
+				where: { id: parseInt(req.params.id) },
 			});
-			if (!deletedCustomer) {
+			if (!customer) {
 				return res.status(404).json({
 					success: false,
 					message: "Customer not found",
 				});
 			}
-			deletedCustomer.deletedAt = new Date();
-			await deletedCustomer.save();
+
+			const deletedCustomer = await prisma.customer.update({
+				where: { id: parseInt(req.params.id) },
+				data: { deletedAt: new Date() },
+			});
 			res.status(200).json({
 				success: true,
 				message: "Customer soft deleted successfully",
@@ -137,19 +121,21 @@ const customerController = {
 		}
 	},
 
-	// Hard DELETE a customer
 	deleteCustomerHard: async (req, res) => {
 		try {
-			const deletedCustomer = await Customer.findByIdAndDelete(
-				{ _id: req.params.id },
-				{ includeSoftDeleted: true }
-			);
-			if (!deletedCustomer) {
+			const customer = await prisma.customer.findUnique({
+				where: { id: parseInt(req.params.id) },
+			});
+			if (!customer) {
 				return res.status(404).json({
 					success: false,
 					message: "Customer not found",
 				});
 			}
+
+			const deletedCustomer = await prisma.customer.delete({
+				where: { id: parseInt(req.params.id) },
+			});
 			res.status(200).json({
 				success: true,
 				message: "Customer hard deleted successfully",
