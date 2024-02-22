@@ -4,9 +4,10 @@
   "description": "backend for a pharmacy system",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "data": "node ./scripts/dev-data.js"
+    "build": "tsc",
+    "start": "node ./dist/app.js",
+    "dev": "nodemon ./src/app.ts",
+    "data": "node ./scripts/dev-data.ts"
   },
   "author": "Grey Boolean",
   "license": "ISC",
@@ -20,6 +21,7 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.1.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
