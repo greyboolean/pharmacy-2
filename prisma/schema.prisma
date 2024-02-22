@@ -11,9 +11,9 @@ datasource db {
 }
 
 enum Role {
-  OWNER
-  MANAGER
-  CASHIER
+  owner
+  manager
+  cashier
 }
 
 model User {

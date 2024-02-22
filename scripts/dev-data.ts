@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
 
@@ -10,7 +10,7 @@ interface User {
 	name: string;
 	username: string;
 	password: string;
-	role: string;
+	role: Role;
 }
 
 interface Medicine {
