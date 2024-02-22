@@ -10,7 +10,9 @@ interface User {
 	role: Role;
 }
 
+// Controller functions for user routes
 const userController = {
+	// GET all users
 	getAllUsers: async (req: Request, res: Response) => {
 		try {
 			const users: User[] = await prisma.user.findMany({
@@ -37,6 +39,7 @@ const userController = {
 		}
 	},
 
+	// CREATE a new user
 	createUser: async (req: Request, res: Response) => {
 		try {
 			const { name, username, password, role } = req.body;
@@ -72,6 +75,7 @@ const userController = {
 		}
 	},
 
+	// GET a single user by ID
 	getUserById: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
@@ -102,6 +106,7 @@ const userController = {
 		}
 	},
 
+	// UPDATE an existing user
 	updateUser: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
@@ -131,6 +136,7 @@ const userController = {
 		}
 	},
 
+	// Soft DELETE a user
 	deleteUserSoft: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
@@ -159,6 +165,7 @@ const userController = {
 		}
 	},
 
+	// Hard DELETE a user
 	deleteUserHard: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
