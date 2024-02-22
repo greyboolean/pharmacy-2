@@ -1,13 +1,13 @@
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
 
-interface ReqBody {
-	name?: string;
-	username?: string;
-	password?: string;
-	role?: string;
+interface User {
+	id: number;
+	name: string;
+	username: string;
+	role: Role;
 }
 
 const userController = {
@@ -17,21 +17,27 @@ const userController = {
 				where: {
 					deletedAt: null,
 				},
+				select: {
+					id: true,
+					name: true,
+					username: true,
+					role: true,
+				},
 			});
 			res.status(200).json({
 				success: true,
 				data: users,
 				message: "All users fetched successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	createUser: async (req: Request<{}, {}, ReqBody>, res: Response) => {
+	createUser: async (req: Request, res: Response) => {
 		try {
 			const { name, username, password, role } = req.body;
 
@@ -58,10 +64,10 @@ const userController = {
 				data: newUser,
 				message: "User created successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
@@ -70,6 +76,12 @@ const userController = {
 		try {
 			const user: User | null = await prisma.user.findUnique({
 				where: { id: parseInt(req.params.id) },
+				select: {
+					id: true,
+					name: true,
+					username: true,
+					role: true,
+				},
 			});
 			if (!user) {
 				return res.status(404).json({
@@ -82,15 +94,15 @@ const userController = {
 				data: user,
 				message: "User fetched successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	updateUser: async (req: Request<{}, {}, ReqBody>, res: Response) => {
+	updateUser: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
 				where: { id: parseInt(req.params.id) },
@@ -111,10 +123,10 @@ const userController = {
 				data: updatedUser,
 				message: "User updated successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
@@ -122,7 +134,7 @@ const userController = {
 	deleteUserSoft: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
-				where: { id: parseInt(req.params.id) },
+				where: { id: parseInt(req.params.id), deletedAt: null },
 			});
 			if (!user) {
 				return res.status(404).json({
@@ -139,10 +151,10 @@ const userController = {
 				success: true,
 				message: "User soft deleted successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
@@ -166,10 +178,10 @@ const userController = {
 				success: true,
 				message: "User hard deleted successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
