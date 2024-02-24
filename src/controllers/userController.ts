@@ -79,7 +79,7 @@ const userController = {
 	getUserById: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
-				where: { id: parseInt(req.params.id) },
+				where: { id: parseInt(req.params.id), deletedAt: null },
 				select: {
 					id: true,
 					name: true,
@@ -110,7 +110,7 @@ const userController = {
 	updateUser: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
-				where: { id: parseInt(req.params.id) },
+				where: { id: parseInt(req.params.id), deletedAt: null },
 			});
 			if (!user) {
 				return res.status(404).json({
