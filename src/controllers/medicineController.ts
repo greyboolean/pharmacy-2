@@ -1,12 +1,29 @@
-const { PrismaClient } = require("@prisma/client");
+import { PrismaClient } from "@prisma/client";
+import { Request, Response } from "express";
+
 const prisma = new PrismaClient();
 
+interface Medicine {
+	id: number;
+	name: string;
+	description: string;
+	quantity: number;
+}
+
+// Controller functions for medicine routes
 const medicineController = {
-	getAllMedicines: async (req, res) => {
+	// GET all medicines
+	getAllMedicines: async (req: Request, res: Response) => {
 		try {
-			const medicines = await prisma.medicine.findMany({
+			const medicines: Medicine[] = await prisma.medicine.findMany({
 				where: {
 					deletedAt: null,
+				},
+				select: {
+					id: true,
+					name: true,
+					description: true,
+					quantity: true,
 				},
 			});
 			res.status(200).json({
@@ -14,17 +31,18 @@ const medicineController = {
 				data: medicines,
 				message: "All medicines fetched successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	createMedicine: async (req, res) => {
+	// CREATE a new medicine
+	createMedicine: async (req: Request, res: Response) => {
 		try {
-			const newMedicine = await prisma.medicine.create({
+			const newMedicine: Medicine = await prisma.medicine.create({
 				data: req.body,
 			});
 			res.status(201).json({
@@ -35,15 +53,22 @@ const medicineController = {
 		} catch (error) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	getMedicineById: async (req, res) => {
+	// GET a single medicine by id
+	getMedicineById: async (req: Request, res: Response) => {
 		try {
-			const medicine = await prisma.medicine.findUnique({
-				where: { id: parseInt(req.params.id) },
+			const medicine: Medicine | null = await prisma.medicine.findUnique({
+				where: { id: parseInt(req.params.id), deletedAt: null },
+				select: {
+					id: true,
+					name: true,
+					description: true,
+					quantity: true,
+				},
 			});
 			if (!medicine) {
 				return res.status(404).json({
@@ -56,18 +81,19 @@ const medicineController = {
 				data: medicine,
 				message: "Medicine fetched successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	updateMedicine: async (req, res) => {
+	// UPDATE an existing medicine
+	updateMedicine: async (req: Request, res: Response) => {
 		try {
-			const medicine = await prisma.medicine.findUnique({
-				where: { id: parseInt(req.params.id) },
+			const medicine: Medicine | null = await prisma.medicine.findUnique({
+				where: { id: parseInt(req.params.id), deletedAt: null },
 			});
 			if (!medicine) {
 				return res.status(404).json({
@@ -85,18 +111,19 @@ const medicineController = {
 				data: updatedMedicine,
 				message: "Medicine updated successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	deleteMedicineSoft: async (req, res) => {
+	// Soft DELETE a medicine
+	deleteMedicineSoft: async (req: Request, res: Response) => {
 		try {
 			const medicine = await prisma.medicine.findUnique({
-				where: { id: parseInt(req.params.id) },
+				where: { id: parseInt(req.params.id), deletedAt: null },
 			});
 			if (!medicine) {
 				return res.status(404).json({
@@ -113,15 +140,15 @@ const medicineController = {
 				success: true,
 				message: "Medicine soft deleted successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
-	deleteMedicineHard: async (req, res) => {
+	deleteMedicineHard: async (req: Request, res: Response) => {
 		try {
 			const medicine = await prisma.medicine.findUnique({
 				where: { id: parseInt(req.params.id) },
@@ -140,13 +167,13 @@ const medicineController = {
 				success: true,
 				message: "Medicine hard deleted successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 };
 
-module.exports = medicineController;
+export default medicineController;

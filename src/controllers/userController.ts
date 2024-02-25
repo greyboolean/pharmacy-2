@@ -75,7 +75,7 @@ const userController = {
 		}
 	},
 
-	// GET a single user by ID
+	// GET a single user by id
 	getUserById: async (req: Request, res: Response) => {
 		try {
 			const user: User | null = await prisma.user.findUnique({
