@@ -50,7 +50,7 @@ const medicineController = {
 				data: newMedicine,
 				message: "Medicine created successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
 				message: (error as Error).message,
@@ -122,7 +122,7 @@ const medicineController = {
 	// Soft DELETE a medicine
 	deleteMedicineSoft: async (req: Request, res: Response) => {
 		try {
-			const medicine = await prisma.medicine.findUnique({
+			const medicine: Medicine | null = await prisma.medicine.findUnique({
 				where: { id: parseInt(req.params.id), deletedAt: null },
 			});
 			if (!medicine) {
@@ -132,7 +132,7 @@ const medicineController = {
 				});
 			}
 
-			const deletedMedicine = await prisma.medicine.update({
+			const deletedMedicine: Medicine = await prisma.medicine.update({
 				where: { id: parseInt(req.params.id) },
 				data: { deletedAt: new Date() },
 			});
@@ -148,9 +148,10 @@ const medicineController = {
 		}
 	},
 
+	// Hard DELETE a medicine
 	deleteMedicineHard: async (req: Request, res: Response) => {
 		try {
-			const medicine = await prisma.medicine.findUnique({
+			const medicine: Medicine | null = await prisma.medicine.findUnique({
 				where: { id: parseInt(req.params.id) },
 			});
 			if (!medicine) {
