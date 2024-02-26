@@ -74,17 +74,17 @@ const authController = {
 				user.password &&
 				(await bcrypt.compare(password, user.password));
 
-			// Remove password from user object
-			if (user) {
-				delete user.password;
-			}
-
-			if (!user || !isPasswordValid) {
-				return res.status(401).json({
-					success: false,
-					message: "Invalid username or password",
-				});
-			}
+				if (!user || !isPasswordValid) {
+					return res.status(401).json({
+						success: false,
+						message: "Invalid username or password",
+					});
+				}
+				
+				// Remove password from user object
+				if (user) {
+					delete user.password;
+				}
 
 			// Generate JWT token
 			const { token, options } = generateToken(user);
