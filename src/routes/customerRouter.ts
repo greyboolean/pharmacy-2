@@ -1,18 +1,18 @@
 import express, { Router } from "express";
 import customerController from "../controllers/customerController";
-// import authController from "../controllers/authController";
+import authController from "../controllers/authController";
 
 const router: Router = express.Router();
 
 // Protect all routes after this middleware
-// router.use(authController.protect);
+router.use(authController.protect);
 
 // Define routes for the root path '/'
 router
 	.route("/")
 	.get(customerController.getAllCustomers)
 	.post(
-		// authController.restrictTo("owner"),
+		authController.restrictTo("owner"),
 		customerController.createCustomer
 	);
 
@@ -21,22 +21,21 @@ router
 	.route("/:id")
 	.get(customerController.getCustomerById)
 	.patch(
-		// authController.restrictTo("owner", "manager", "cashier"),
+		authController.restrictTo("owner", "manager", "cashier"),
 		customerController.updateCustomer
 	);
-// .delete(customerController.deleteCustomer);
 
 // Define routes for soft and hard customer delete
 router
 	.route("/:id/soft")
 	.delete(
-		// authController.restrictTo("owner", "manager"),
+		authController.restrictTo("owner", "manager"),
 		customerController.deleteCustomerSoft
 	);
 router
 	.route("/:id/hard")
 	.delete(
-		// authController.restrictTo("owner"),
+		authController.restrictTo("owner"),
 		customerController.deleteCustomerHard
 	);
 
