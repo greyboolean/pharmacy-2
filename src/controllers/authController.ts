@@ -58,7 +58,7 @@ const authController = {
 
 			// Find the user in the database
 			const user: User | null = await prisma.user.findUnique({
-				where: { username },
+				where: { username, deletedAt: null },
 				select: {
 					id: true,
 					name: true,
@@ -74,17 +74,17 @@ const authController = {
 				user.password &&
 				(await bcrypt.compare(password, user.password));
 
-				if (!user || !isPasswordValid) {
-					return res.status(401).json({
-						success: false,
-						message: "Invalid username or password",
-					});
-				}
-				
-				// Remove password from user object
-				if (user) {
-					delete user.password;
-				}
+			if (!user || !isPasswordValid) {
+				return res.status(401).json({
+					success: false,
+					message: "Invalid username or password",
+				});
+			}
+
+			// Remove password from user object
+			if (user) {
+				delete user.password;
+			}
 
 			// Generate JWT token
 			const { token, options } = generateToken(user);
@@ -150,7 +150,7 @@ const authController = {
 
 			// Find user by id
 			const user: User | null = await prisma.user.findUnique({
-				where: { id: decoded.id },
+				where: { id: decoded.id, deletedAt: null },
 				select: {
 					id: true,
 					name: true,
