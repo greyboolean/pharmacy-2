@@ -46,6 +46,13 @@ const customerController = {
 		try {
 			const newCustomer: Customer = await prisma.customer.create({
 				data: req.body,
+				select: {
+					id: true,
+					name: true,
+					email: true,
+					address: true,
+					phoneNumber: true,
+				},
 			});
 			res.status(201).json({
 				success: true,
@@ -108,6 +115,13 @@ const customerController = {
 			const updatedCustomer: Customer = await prisma.customer.update({
 				where: { id: parseInt(req.params.id) },
 				data: req.body,
+				select: {
+					id: true,
+					name: true,
+					email: true,
+					address: true,
+					phoneNumber: true,
+				},
 			});
 			res.status(200).json({
 				success: true,

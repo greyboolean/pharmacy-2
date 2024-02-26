@@ -44,6 +44,12 @@ const medicineController = {
 		try {
 			const newMedicine: Medicine = await prisma.medicine.create({
 				data: req.body,
+				select: {
+					id: true,
+					name: true,
+					description: true,
+					quantity: true,
+				},
 			});
 			res.status(201).json({
 				success: true,
@@ -105,6 +111,12 @@ const medicineController = {
 			const updatedMedicine = await prisma.medicine.update({
 				where: { id: parseInt(req.params.id) },
 				data: req.body,
+				select: {
+					id: true,
+					name: true,
+					description: true,
+					quantity: true,
+				},
 			});
 			res.status(200).json({
 				success: true,
