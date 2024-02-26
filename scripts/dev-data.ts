@@ -1,6 +1,7 @@
 import { PrismaClient, Role } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
+import hashPassword from "../src/utils/hashPassword";
 
 dotenv.config();
 
@@ -31,7 +32,7 @@ const generateUsers = async (num: number): Promise<void> => {
 		const user: User = {
 			name: faker.person.fullName(),
 			username: faker.internet.userName(),
-			password: "pass1234",
+			password: await hashPassword("pass1234"),
 			role: faker.helpers.arrayElement(["manager", "cashier"]),
 		};
 		await prisma.user.create({ data: user });
@@ -42,7 +43,7 @@ const generateOwner = async (): Promise<void> => {
 	const owner: User = {
 		name: "Grey Boolean",
 		username: "greyboolean",
-		password: "pass1234",
+		password: await hashPassword("pass1234"),
 		role: "owner",
 	};
 	await prisma.user.create({ data: owner });

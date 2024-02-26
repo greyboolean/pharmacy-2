@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import { Request, Response } from "express";
+import hashPassword from "../utils/hashPassword";
 
 const prisma = new PrismaClient();
 
@@ -61,7 +62,21 @@ const userController = {
 				});
 			}
 
-			const newUser: User = await prisma.user.create({ data: req.body });
+			// Hash the password
+			const hashedPassword: string = await hashPassword(password);
+
+			const newUser: User = await prisma.user.create({
+				data: {
+					...req.body,
+					password: hashedPassword,
+				},
+				select: {
+					id: true,
+					name: true,
+					username: true,
+					role: true,
+				},
+			});
 			res.status(201).json({
 				success: true,
 				data: newUser,
@@ -119,9 +134,25 @@ const userController = {
 				});
 			}
 
+			let data = req.body;
+
+			// Hash the password if it is being updated
+			if (req.body.password) {
+				const hashedPassword: string = await hashPassword(
+					req.body.password
+				);
+				data = { ...req.body, password: hashedPassword };
+			}
+
 			const updatedUser: User = await prisma.user.update({
 				where: { id: parseInt(req.params.id) },
-				data: req.body,
+				data: data,
+				select: {
+					id: true,
+					name: true,
+					username: true,
+					role: true,
+				},
 			});
 			res.status(200).json({
 				success: true,
