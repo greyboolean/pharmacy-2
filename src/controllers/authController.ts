@@ -1,9 +1,13 @@
 import { PrismaClient, Role } from "@prisma/client";
-import { Request, Response, NextFunction } from "express";
+import { Request as ExpressRequest, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+
+interface Request extends ExpressRequest {
+	user?: User;
+}
 
 interface User {
 	id: number;
