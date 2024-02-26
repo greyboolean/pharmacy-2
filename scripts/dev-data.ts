@@ -90,6 +90,10 @@ const deleteData = async (): Promise<void> => {
 		prisma.medicine.deleteMany(),
 		prisma.customer.deleteMany(),
 	]);
+	// Reset sequences
+	await prisma.$executeRaw`ALTER SEQUENCE "User_id_seq" RESTART WITH 1;`;
+	await prisma.$executeRaw`ALTER SEQUENCE "Medicine_id_seq" RESTART WITH 1;`;
+	await prisma.$executeRaw`ALTER SEQUENCE "Customer_id_seq" RESTART WITH 1;`;
 	console.log("Data deleted.");
 };
 
