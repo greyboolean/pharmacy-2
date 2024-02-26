@@ -1,17 +1,36 @@
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const User = require("../models/userModel");
+import { PrismaClient, Role } from "@prisma/client";
+import { Request, Response, NextFunction } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
-const generateToken = (user) => {
+const prisma = new PrismaClient();
+
+interface User {
+	id: number;
+	name: string;
+	username: string;
+	password?: string;
+	role: Role;
+}
+
+interface TokenOptions {
+	expires: Date;
+	httpOnly: boolean;
+}
+
+const generateToken = (
+	user: User
+): { token: string; options: TokenOptions } => {
 	// Generate jwt token
-	const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+	const token: string = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
 		expiresIn: process.env.JWT_EXPIRES_IN,
 	});
 
 	// Define options for cookie
-	const options = {
+	const options: TokenOptions = {
 		expires: new Date(
-			Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+			Date.now() +
+				Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000
 		),
 		httpOnly: true,
 	};
@@ -21,53 +40,8 @@ const generateToken = (user) => {
 };
 
 const authController = {
-	// // Signup
-	// signup: async (req, res) => {
-	// 	try {
-	// 		// Get user input
-	// 		const { name, username, password } = req.body;
-	// 		if (!name || !username || !password) {
-	// 			return res.status(400).json({
-	// 				success: false,
-	// 				message: "Name, username, and password are required",
-	// 			});
-	// 		}
-
-	// 		// Check if user already exists
-	// 		const existingUser = await User.findOne({ username });
-	// 		if (existingUser) {
-	// 			return res.status(409).json({
-	// 				success: false,
-	// 				message: "Username already exists",
-	// 			});
-	// 		}
-
-	// 		// Save user to database
-	// 		const newUser = User.create(req.body);
-
-	// 		// Remove password from output
-	// 		newUser.password = undefined;
-
-	// 		// Generate JWT token
-	// 		const token = generateToken(newUser);
-
-	// 		// Return the token
-	// 		res.status(201).json({
-	// 			success: true,
-	// 			token,
-	// 			data: newUser,
-	// 			message: "User created successfully",
-	// 		});
-	// 	} catch (error) {
-	// 		res.status(500).json({
-	// 			success: false,
-	// 			message: error.message,
-	// 		});
-	// 	}
-	// },
-
 	// Login
-	login: async (req, res) => {
+	login: async (req: Request, res: Response) => {
 		try {
 			// Get user input
 			const { username, password } = req.body;
@@ -79,13 +53,27 @@ const authController = {
 			}
 
 			// Find the user in the database
-			const user = await User.findOne({ username }).select("+password");
+			const user: User | null = await prisma.user.findUnique({
+				where: { username },
+				select: {
+					id: true,
+					name: true,
+					username: true,
+					password: true,
+					role: true,
+				},
+			});
 
 			// Compare passwords
-			const isPasswordValid = await bcrypt.compare(
-				password,
-				user.password
-			);
+			const isPasswordValid =
+				user &&
+				user.password &&
+				(await bcrypt.compare(password, user.password));
+
+			// Remove password from user object
+			if (user) {
+				delete user.password;
+			}
 
 			if (!user || !isPasswordValid) {
 				return res.status(401).json({
@@ -93,9 +81,6 @@ const authController = {
 					message: "Invalid username or password",
 				});
 			}
-
-			// Remove password from output
-			user.password = undefined;
 
 			// Generate JWT token
 			const { token, options } = generateToken(user);
@@ -110,16 +95,16 @@ const authController = {
 				data: user,
 				message: "User logged in successfully",
 			});
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
 	// Logout
-	logout: (req, res) => {
+	logout: (req: Request, res: Response) => {
 		// Remove cookie
 		res.cookie("jwt", "", { maxAge: 1, httpOnly: true });
 
@@ -131,7 +116,7 @@ const authController = {
 	},
 
 	// Protect route
-	protect: async (req, res, next) => {
+	protect: async (req: Request, res: Response, next: NextFunction) => {
 		try {
 			let token;
 			// Get token from request header
@@ -154,10 +139,21 @@ const authController = {
 			}
 
 			// Verify token
-			const decoded = jwt.verify(token, process.env.JWT_SECRET);
+			const decoded = jwt.verify(
+				token,
+				process.env.JWT_SECRET!
+			) as JwtPayload;
 
 			// Find user by id
-			const user = await User.findById(decoded.id);
+			const user: User | null = await prisma.user.findUnique({
+				where: { id: decoded.id },
+				select: {
+					id: true,
+					name: true,
+					username: true,
+					role: true,
+				},
+			});
 
 			// Check if user exists
 			if (!user) {
@@ -171,19 +167,19 @@ const authController = {
 			req.user = user;
 
 			next();
-		} catch (error) {
+		} catch (error: unknown) {
 			res.status(500).json({
 				success: false,
-				message: error.message,
+				message: (error as Error).message,
 			});
 		}
 	},
 
 	// Restrict route to certain roles
-	restrictTo: (...roles) => {
-		return (req, res, next) => {
+	restrictTo: (...roles: string[]) => {
+		return (req: Request, res: Response, next: NextFunction) => {
 			// Check if user role is included in roles
-			if (!roles.includes(req.user.role)) {
+			if (!req.user || !roles.includes(req.user.role)) {
 				return res.status(403).json({
 					success: false,
 					message: "You are not authorized to access this route",
@@ -195,4 +191,4 @@ const authController = {
 	},
 };
 
-module.exports = authController;
+export default authController;
